@@ -114,9 +114,11 @@ def main():
     runtime['all'] = AverageMeter()
     
     # training loop
+    from tqdm import tqdm
     for epoch in range(start_epoch+1, cfg['train']['total_epochs']+1):
 
-        for batch in train_loader:
+        progress_bar = tqdm(train_loader)
+        for batch in progress_bar:
             it += 1
             
             start = time.time()

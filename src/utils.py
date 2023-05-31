@@ -131,8 +131,8 @@ def scatter_to_grid(inds, vals, size):
     fac = [np.prod(size[i+1:]) for i in range(len(size)-1)] + [1]
     fac = torch.tensor(fac, device=dev).type(inds.dtype)
     inds_fold = torch.sum(inds*fac, dim=-1)  # [#values,]
-    # result.scatter_add_(0, inds_fold, vals)
-    result[inds_fold] += vals
+    result.scatter_add_(0, inds_fold, vals)
+    # result[inds_fold] += vals
     result = result.view(*size)
     return result
 

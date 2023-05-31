@@ -4,6 +4,9 @@ data:
   data_type: psr_full_abc
   input_type: pointcloud
   path: ../../meshnet/datasets
+  train_split: trainset
+  val_split: valset
+  test_split: testset
   num_gt_points: 10000
   num_offset: 7
   pointcloud_n: 3000

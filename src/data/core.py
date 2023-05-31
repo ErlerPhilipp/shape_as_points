@@ -229,7 +229,7 @@ class AbcDataset(data.Dataset):
             if not os.path.isdir(subpath):
                 logger.warning('Category %s does not exist in dataset.' % c)
 
-            split_file = os.path.join(subpath, split + 'set.txt')
+            split_file = os.path.join(subpath, split + '.txt')
             with open(split_file, 'r') as f:
                 models_c = f.read().split('\n')
             
