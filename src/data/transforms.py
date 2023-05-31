@@ -82,5 +82,25 @@ class SubsamplePointcloud(object):
         if 'normals' in data.keys():
             normals = data['normals']
             data_out['normals'] = normals[indices, :]
+        if 'points_scan' in data.keys():
+            data_out['points_scan'] = data['points_scan'][indices]
 
+        return data_out
+    
+class TakeSyntheticScan(object):
+    '''  transformation class.
+
+    take points from synthetic scan. we still need gt points for metrics, i guess.
+    '''
+    def __init__(self):
+        pass
+
+    def __call__(self, data):
+        ''' Calls the transformation.
+
+        Args:
+            data (dict): data dictionary
+        '''
+        data_out = data.copy()
+        data_out[None] = data['points_scan']
         return data_out

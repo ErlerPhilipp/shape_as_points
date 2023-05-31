@@ -180,6 +180,144 @@ class Shapes3dDataset(data.Dataset):
         return True
 
 
+class AbcDataset(data.Dataset):
+    ''' ABC dataset class.
+    '''
+
+    def __init__(self, dataset_folder, fields, split=None,
+                 categories=None, no_except=True, transform=None, cfg=None):
+        ''' Initialization of the the 3D shape dataset.
+
+        Args:
+            dataset_folder (str): dataset folder
+            fields (dict): dictionary of fields
+            split (str): which split is used
+            categories (list): list of categories to use
+            no_except (bool): no exception
+            transform (callable): transformation applied to data points
+            cfg (yaml): config file
+        '''
+        # Attributes
+        self.dataset_folder = dataset_folder
+        self.fields = fields
+        self.no_except = no_except
+        self.transform = transform
+        self.cfg = cfg
+
+        if split == 'test':
+            categories = [
+                'abc', 'abc_extra_noisy', 'abc_noisefree',
+                'real_world',
+                'famous_original', 'famous_noisefree', 'famous_sparse', 'famous_dense', 'famous_extra_noisy',
+                'thingi10k_scans_original', 'thingi10k_scans_noisefree', 'thingi10k_scans_sparse',
+                'thingi10k_scans_dense', 'thingi10k_scans_extra_noisy']
+        else:
+            categories = ['abc_train']
+
+        self.metadata = {
+            c: {'id': c, 'name': c} for c in categories
+        } 
+        
+        # Set index
+        for c_idx, c in enumerate(categories):
+            self.metadata[c]['idx'] = c_idx
+
+        # Get all models
+        self.models = []
+        for c_idx, c in enumerate(categories):
+            subpath = os.path.join(dataset_folder, c)
+            if not os.path.isdir(subpath):
+                logger.warning('Category %s does not exist in dataset.' % c)
+
+            split_file = os.path.join(subpath, split + 'set.txt')
+            with open(split_file, 'r') as f:
+                models_c = f.read().split('\n')
+            
+            if '' in models_c:
+                models_c.remove('')
+
+            self.models += [
+                {'category': c, 'model': m}
+                for m in models_c
+            ]
+        
+        # precompute
+        self.split = split
+            
+    def __len__(self):
+        ''' Returns the length of the dataset.
+        '''
+        return len(self.models)
+
+    def __getitem__(self, idx):
+        ''' Returns an item of the dataset.
+
+        Args:
+            idx (int): ID of data point
+        '''
+        
+        category = self.models[idx]['category']
+        model = self.models[idx]['model']
+        c_idx = self.metadata[category]['idx']
+
+        model_path = os.path.join(self.dataset_folder, category, model)
+        data = {}
+
+        info = c_idx
+        
+        if self.cfg['data']['multi_files'] is not None:
+            idx = np.random.randint(self.cfg['data']['multi_files'])
+            if self.split != 'train':
+                idx = 0
+
+        for field_name, field in self.fields.items():
+            # try:
+            field_data = field.load(model_path, idx, info)
+            # except Exception:
+            #     if self.no_except:
+            #         logger.warn(
+            #             'Error occured when loading field %s of model %s'
+            #             % (field_name, model)
+            #         )
+            #         return None
+            #     else:
+            #         raise
+
+            if isinstance(field_data, dict):
+                for k, v in field_data.items():
+                    if k is None:
+                        data[field_name] = v
+                    else:
+                        data['%s.%s' % (field_name, k)] = v
+            else:
+                data[field_name] = field_data
+
+        if self.transform is not None:
+            data = self.transform(data)
+
+        return data
+        
+    
+    def get_model_dict(self, idx):
+        return self.models[idx]
+
+    def test_model_complete(self, category, model):
+        ''' Tests if model is complete.
+
+        Args:
+            model (str): modelname
+        '''
+        model_path = os.path.join(self.dataset_folder, category, model)
+        files = os.listdir(model_path)
+        for field_name, field in self.fields.items():
+            if not field.check_complete(files):
+                logger.warn('Field "%s" is incomplete: %s'
+                            % (field_name, model_path))
+                return False
+
+        return True
+    
+
 def collate_remove_none(batch):
     ''' Collater that puts each data field into a tensor with outer dimension
         batch size.

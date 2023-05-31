@@ -78,6 +78,22 @@ def get_dataset(mode, cfg, return_idx=False):
             categories=categories,
             cfg = cfg
         )
+    elif dataset_type == 'ABC':
+        fields = get_data_fields(mode, cfg)
+        # Input fields
+        inputs_field = get_inputs_field_abc(mode, cfg)
+        if inputs_field is not None:
+            fields['inputs'] = inputs_field
+
+        if return_idx:
+            fields['idx'] = data.IndexField()
+
+        dataset = data.AbcDataset(
+            dataset_folder, fields,
+            split=split,
+            categories=categories,
+            cfg = cfg
+        )
     else:
         raise ValueError('Invalid dataset "%s"' % cfg['data']['dataset'])
  
@@ -119,6 +135,34 @@ def get_inputs_field(mode, cfg):
             'Invalid input type (%s)' % input_type)
     return inputs_field
 
+
+def get_inputs_field_abc(mode, cfg):
+    ''' Returns the inputs fields.
+
+    Args:
+        mode (str): the mode which is used
+        cfg (dict): config dictionary
+    '''
+    input_type = cfg['data']['input_type']
+
+    if input_type is None:
+        inputs_field = None
+    elif input_type == 'pointcloud':
+        transform = transforms.Compose([
+            data.SubsamplePointcloud(cfg['data']['pointcloud_n']),
+            data.TakeSyntheticScan()
+        ])
+
+        data_type = cfg['data']['data_type']
+        inputs_field = data.PointCloudField(
+            cfg['data']['pointcloud_file'], data_type, transform,
+            multi_files= cfg['data']['multi_files']
+        )    
+    else:
+        raise ValueError(
+            'Invalid input type (%s)' % input_type)
+    return inputs_field
+
 def get_data_fields(mode, cfg):
     ''' Returns the data fields.
 
@@ -140,7 +184,11 @@ def get_data_fields(mode, cfg):
     if data_type == 'psr_full':
         if mode != 'test':
             fields['gt_psr'] = data.FullPSRField(multi_files=cfg['data']['multi_files'])
+    elif data_type == 'psr_full_abc':
+        if mode != 'test':
+            fields['gt_psr'] = data.FullPSRFieldAbc(grid_res=cfg['model']['grid_res'])
     else:
         raise ValueError('Invalid data type (%s)' % data_type)
 
     return fields
+
