@@ -8,6 +8,7 @@ import trimesh
 from src.data.core import Field
 from pdb import set_trace as st
 
+padding = 1.2
 
 class IndexField(Field):
     ''' Basic index field.'''
@@ -77,8 +78,12 @@ class FullPSRFieldAbc(Field):
             dataset_path = os.path.split(model_path)[0]
             gt_mesh_path = os.path.join(dataset_path, '03_meshes', '{}.ply'.format(model_name))
             mesh = trimesh.load(gt_mesh_path)
+
             points, face_idx = mesh.sample(100000, return_index=True)
             normals = mesh.face_normals[face_idx]
+
+            # to [0..1] like in https://github.com/autonomousvision/shape_as_points/blob/main/scripts/process_shapenet.py
+            points = points / 2.0 / padding + 0.5
 
             dpsr = DPSR(res=(self.grid_res, self.grid_res, self.grid_res), sig=0)
             psr_gt = dpsr(from_numpy(points.astype(np.float32))[None], 
@@ -168,6 +173,7 @@ class PointCloudField(Field):
             file_path = os.path.join(dataset_dir, '04_pts', '{}.xyz.npy'.format(model_name))
             pointcloud_npy = np.load(file_path)
             points_scan = pointcloud_npy.astype(np.float32)
+
             # normals_scan = np.zeros_like(points_scan)
             # normals_scan[:, 0] = 1.0
 
@@ -176,6 +182,10 @@ class PointCloudField(Field):
             points, face_idx = mesh.sample(points_scan.shape[0], return_index=True)
             normals = mesh.face_normals[face_idx]
 
+            # to [0..1] like in https://github.com/autonomousvision/shape_as_points/blob/main/scripts/process_shapenet.py
+            points = points / 2.0 / padding + 0.5
+            points_scan = points_scan / 2.0 / padding + 0.5
+            
         data = {
             None: points,
             'normals': normals,
