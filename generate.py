@@ -156,10 +156,12 @@ def main():
 
             v, f, points, normals, stats_dict = out
             time_dict.update(stats_dict)
+            v = scale2onet(v)
+            v *= 2.0  # for P2S dataset (going out of bounds)
 
             # Write output
             mesh_out_file = os.path.join(mesh_dir, '%s.off' % modelname)
-            export_mesh(mesh_out_file, scale2onet(v), f)
+            export_mesh(mesh_out_file, v, f)
             out_file_dict['mesh'] = mesh_out_file
         
         if generate_pointcloud:

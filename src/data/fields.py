@@ -8,8 +8,6 @@ import trimesh
 from src.data.core import Field
 from pdb import set_trace as st
 
-padding = 1.2
-
 class IndexField(Field):
     ''' Basic index field.'''
     def load(self, model_path, idx, category):
@@ -53,6 +51,14 @@ class FullPSRField(Field):
         # print('load PSR: {:.4f}, change type: {:.4f}, total: {:.4f}'.format(t1 - t0, t2 - t1, t2-t0))
         data = {None: psr}
         
+        # # test psr
+        # from src.utils import mc_from_psr
+        # from torch import from_numpy
+        # v, f, _ = mc_from_psr(from_numpy(psr_dict['psr']).unsqueeze(0))
+        # mesh_out = trimesh.Trimesh(vertices=v, faces=f)
+        # os.makedirs('debug/sap', exist_ok=True)
+        # mesh_out.export(os.path.join('debug', 'sap', '{}.ply'.format(idx)))
+
         if self.transform is not None:
             data = self.transform(data)
 
@@ -62,6 +68,7 @@ class FullPSRFieldAbc(Field):
     def __init__(self, grid_res: int, transform=None):
         self.transform = transform
         self.grid_res = grid_res
+        self.scale = 1.2
     
     def load(self, model_path, idx, category):
 
@@ -83,7 +90,8 @@ class FullPSRFieldAbc(Field):
             normals = mesh.face_normals[face_idx]
 
             # to [0..1] like in https://github.com/autonomousvision/shape_as_points/blob/main/scripts/process_shapenet.py
-            points = points / 2.0 / padding + 0.5
+            points = points / 2.0 / self.scale + 0.5  # too much over bounds -> div by 2
+            # points = points / self.scale + 0.5
 
             dpsr = DPSR(res=(self.grid_res, self.grid_res, self.grid_res), sig=0)
             psr_gt = dpsr(from_numpy(points.astype(np.float32))[None], 
@@ -93,7 +101,8 @@ class FullPSRFieldAbc(Field):
             np.savez(psr_path, psr=psr_gt)
 
         if not os.path.exists(psr_path):  # create DPSR on the fly for next time...
-            with open('myfile.txt', 'w') as fp:  # create empty file to avoid concurrency problems
+            os.makedirs(os.path.dirname(psr_path), exist_ok=True)
+            with open(psr_path, 'w') as fp:  # create empty file to avoid concurrency problems
                 pass
             
             print('Warning: creating DPSR for {}'.format(psr_path))
@@ -114,6 +123,14 @@ class FullPSRFieldAbc(Field):
                     print('Warning: encountered broken NPZ, creating DPSR for {}'.format(psr_path))
                     _make_dpsr()
                     psr_dict = np.load(psr_path)
+
+        # # test psr
+        # from src.utils import mc_from_psr
+        # from torch import from_numpy
+        # v, f, _ = mc_from_psr(from_numpy(psr_dict['psr']).unsqueeze(0))
+        # mesh_out = trimesh.Trimesh(vertices=v, faces=f)
+        # os.makedirs('debug/p2s', exist_ok=True)
+        # mesh_out.export(os.path.join('debug/p2s', model_name + '.ply'))
 
         # t1 = time.time()
         psr = psr_dict['psr']
@@ -167,29 +184,34 @@ class PointCloudField(Field):
 
             points = pointcloud_dict['points'].astype(np.float32)
             normals = pointcloud_dict['normals'].astype(np.float32)
+            # points_scan = points
         else:  # assume P2S datasets
             model_name = os.path.basename(model_path)
             dataset_dir = os.path.split(model_path)[0]
             file_path = os.path.join(dataset_dir, '04_pts', '{}.xyz.npy'.format(model_name))
             pointcloud_npy = np.load(file_path)
             points_scan = pointcloud_npy.astype(np.float32)
-
-            # normals_scan = np.zeros_like(points_scan)
-            # normals_scan[:, 0] = 1.0
+            normals_scan = np.zeros_like(points_scan)
+            normals_scan[:, 0] = 1.0
 
             gt_mesh_path = os.path.join(dataset_dir, '03_meshes', '{}.ply'.format(model_name))
             mesh = trimesh.load(gt_mesh_path)
-            points, face_idx = mesh.sample(points_scan.shape[0], return_index=True)
-            normals = mesh.face_normals[face_idx]
+            points_uniform, face_idx = mesh.sample(points_scan.shape[0], return_index=True)
+            normals_uniform = mesh.face_normals[face_idx]
 
-            # to [0..1] like in https://github.com/autonomousvision/shape_as_points/blob/main/scripts/process_shapenet.py
-            points = points / 2.0 / padding + 0.5
-            points_scan = points_scan / 2.0 / padding + 0.5
+            # points = points_uniform.astype(np.float32)
+            # normals = normals_uniform.astype(np.float32)
+            points = points_scan.astype(np.float32)
+            normals = normals_scan.astype(np.float32)
+
+            # to [-0.5...+0.5], too much over bounds -> div by 2
+            points = points / 2.0
+            # points_scan = points_scan / 2.0
             
         data = {
             None: points,
             'normals': normals,
-            'points_scan': points_scan,
+            # 'points_scan': points_scan,
         }
         if self.transform is not None:
             data = self.transform(data)

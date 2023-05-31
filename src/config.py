@@ -150,7 +150,8 @@ def get_inputs_field_abc(mode, cfg):
     elif input_type == 'pointcloud':
         transform = transforms.Compose([
             data.SubsamplePointcloud(cfg['data']['pointcloud_n']),
-            data.TakeSyntheticScan()
+            # data.TakeSyntheticScan()
+            # data.PointcloudNoise(cfg['data']['pointcloud_noise']),
         ])
 
         data_type = cfg['data']['data_type']

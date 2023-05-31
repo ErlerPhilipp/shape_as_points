@@ -11,7 +11,7 @@ data:
   num_offset: 7
   pointcloud_n: 3000
 model:
-  grid_res: 256 # poisson grid resolution  # TODO: increase for own training
+  grid_res: 128 # poisson grid resolution  # TODO: increase for own training
   psr_sigma: 2
   psr_tanh: True
   normal_normalize: False
@@ -40,12 +40,12 @@ train:
   out_dir: out/abc_var_noise/retrained
   w_psr: 1
   model_selection_metric: psr_l2
-  print_every: 100
-  checkpoint_every: 200
-  validate_every: 5000
-  backup_every: 10000
-  total_epochs: 400000
-  visualize_every: 5000
+  print_every: 1
+  checkpoint_every: 300  # ~every 2 epochs
+  validate_every: 300
+  backup_every: 300
+  visualize_every: 300
+  total_epochs: 500
   exp_pcl: True
   exp_mesh: True
   n_workers: 48
