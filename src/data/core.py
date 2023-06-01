@@ -204,13 +204,14 @@ class AbcDataset(data.Dataset):
         self.transform = transform
         self.cfg = cfg
 
-        if split == 'test':
+        if split == 'testset':
             categories = [
                 'abc', 'abc_extra_noisy', 'abc_noisefree',
                 'real_world',
                 'famous_original', 'famous_noisefree', 'famous_sparse', 'famous_dense', 'famous_extra_noisy',
                 'thingi10k_scans_original', 'thingi10k_scans_noisefree', 'thingi10k_scans_sparse',
-                'thingi10k_scans_dense', 'thingi10k_scans_extra_noisy']
+                'thingi10k_scans_dense', 'thingi10k_scans_extra_noisy'
+                ]
         else:
             categories = ['abc_train']
 
