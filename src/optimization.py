@@ -304,7 +304,7 @@ class Trainer(object):
                                         '{}.mp4'.format(it)), 
                                         (pred_imgs*255.).type(torch.uint8), fps=24)
 
-    def save_mesh_pointclouds(self, inputs, epoch, center=None, scale=None):
+    def save_mesh_pointclouds(self, inputs, epoch, center=None, scale=None, outdir_mesh=None):
         '''  Save meshes and point clouds.
         Args:
             inputs (torch.tensor)       : source point clouds
@@ -341,7 +341,8 @@ class Trainer(object):
             mesh = o3d.geometry.TriangleMesh()
             mesh.vertices = o3d.utility.Vector3dVector(v)
             mesh.triangles = o3d.utility.Vector3iVector(f)
-            outdir_mesh = os.path.join(dir_mesh, '{:04d}.ply'.format(epoch))
+            if outdir_mesh is None:
+                outdir_mesh = os.path.join(dir_mesh, '{:04d}.ply'.format(epoch))
             o3d.io.write_triangle_mesh(outdir_mesh, mesh)
 
         if self.cfg['train']['vis_psr']:

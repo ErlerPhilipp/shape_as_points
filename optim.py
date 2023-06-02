@@ -92,9 +92,9 @@ def main():
             vertices = np.stack([plydata['vertex']['x'],
                                     plydata['vertex']['y'],
                                     plydata['vertex']['z']], axis=1)
-            normals = np.stack([plydata['vertex']['nx'],
-                                plydata['vertex']['ny'],
-                                plydata['vertex']['nz']], axis=1)
+            # normals = np.stack([plydata['vertex']['nx'],
+            #                     plydata['vertex']['ny'],
+            #                     plydata['vertex']['nz']], axis=1)
             N = vertices.shape[0]
             center = vertices.mean(0)
             scale = np.max(np.max(np.abs(vertices - center), axis=0))
@@ -103,7 +103,7 @@ def main():
             vertices *= 0.9
 
             target_pts = torch.tensor(vertices, device=device)[None].float()
-            target_normals = torch.tensor(normals, device=device)[None].float()
+            # target_normals = torch.tensor(normals, device=device)[None].float()
             mesh = None # no GT mesh
 
         if not torch.is_tensor(center):
@@ -112,7 +112,8 @@ def main():
             scale = torch.from_numpy(np.array([scale]))
 
         data = {'target_points': target_pts,
-                'target_normals': target_normals, # normals are never used
+                # 'target_normals': target_normals, # normals are never used
+                'target_normals': None, # normals are never used
                 'gt_mesh': mesh}
 
     else:
@@ -288,7 +289,16 @@ def main():
                 optimizer = update_optimizer(inputs, cfg, 
                             epoch=epoch, model=model, schedule=lr_schedules)
                 trainer = Trainer(cfg, optimizer, device=device)
-    
+
+    # save final output extra
+    outdir_config = os.path.split(os.path.split(cfg['train']['out_dir'])[0])[0]
+    outdir_res = os.path.split(cfg['train']['out_dir'])[1]
+    outdir_mesh = os.path.join(outdir_config, outdir_res, 'meshes')
+    outfile_mesh = os.path.join(outdir_mesh, os.path.basename(data_path)[:-8] + '.ply')
+    os.makedirs(outdir_mesh, exist_ok=True)
+    trainer.save_mesh_pointclouds(inputs, cfg['train']['total_epochs']+1, center.cpu().numpy(), 
+                                  scale.cpu().numpy()*(1/0.9), outdir_mesh=outfile_mesh)
+
     # visualize the Open3D outputs
     if cfg['train']['o3d_show']:
         out_video_dir = os.path.join(cfg['train']['out_dir'], 
