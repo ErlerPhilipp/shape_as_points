@@ -67,6 +67,8 @@ def main():
     if data_type == 'point':
         if cfg['data']['object_id'] != -1:
             data_paths = sorted(glob.glob(cfg['data']['data_path']))
+            if not os.path.exists(os.path.dirname(cfg['data']['data_path'])):
+                raise FileExistsError('path does not exist {}'.format(cfg['data']['data_path']))
             data_path = data_paths[cfg['data']['object_id']]
             print('Loaded %d/%d object' % (cfg['data']['object_id']+1, len(data_paths)))
         else:
@@ -104,6 +106,17 @@ def main():
 
             target_pts = torch.tensor(vertices, device=device)[None].float()
             # target_normals = torch.tensor(normals, device=device)[None].float()
+            mesh = None # no GT mesh
+        elif ext == 'npy':
+            vertices = np.load(data_path)
+            N = vertices.shape[0]
+            center = vertices.mean(0)
+            scale = np.max(np.max(np.abs(vertices - center), axis=0))
+            vertices -= center
+            vertices /= scale
+            vertices *= 0.9
+
+            target_pts = torch.tensor(vertices, device=device)[None].float()
             mesh = None # no GT mesh
 
         if not torch.is_tensor(center):

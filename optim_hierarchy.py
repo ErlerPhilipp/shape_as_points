@@ -50,9 +50,10 @@ def main():
                             'res_%d' % (resolutions[idx-1]), 
                             'vis', init_shape, '%04d.ply' % (iterations[idx-1]))
         
-        
-        cmd = 'export MKL_SERVICE_FORCE_INTEL=1 && '
         # cmd = ''
+        cmd = 'export MKL_SERVICE_FORCE_INTEL=1 && '
+        num_gpus = 4
+        cmd += 'export CUDA_VISIBLE_DEVICES={} && '.format(args.object_id % num_gpus)
         cmd += "python optim.py %s --model:grid_res %d --model:psr_sigma %d \
                                    --train:input_mesh %s --train:total_epochs %d \
                                    --train:out_dir %s --train:lr_pcl %f \
