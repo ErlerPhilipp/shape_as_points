@@ -9,6 +9,7 @@ data:
   # data_path: '../../meshnet/datasets/famous_noisefree/04_pts/*.npy'
   # data_path: '../../meshnet/datasets/famous_original/04_pts/*.npy'
   # data_path: '../../meshnet/datasets/famous_sparse/04_pts/*.npy'
+  # data_path: '../../meshnet/datasets/real_world/04_pts/*.npy'
   # data_path: '../../meshnet/datasets/thingi10k_scans_dense/04_pts/*.npy'
   # data_path: '../../meshnet/datasets/thingi10k_scans_extra_noisy/04_pts/*.npy'
   # data_path: '../../meshnet/datasets/thingi10k_scans_noisefree/04_pts/*.npy'
